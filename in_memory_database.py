@@ -8,16 +8,20 @@ class InMemoryDatabase:
         self._values_count = defaultdict(int)
 
     def set(self, name, value):
+        previous_value = self._db.get(name, None)
+        if previous_value:
+            self._values_count[previous_value] -= 1
         self._db[name] = value
-        self._values_count[name] += 1
+        self._values_count[value] += 1
     
     def get(self, name):
         return self._db.get(name, None)
     
     def delete(self, name):
         if name in self._db:
+            value = self._db[name]
             del self._db[name]
-            self._values_count[name] -= 1
+            self._values_count[value] -= 1
 
     def count(self, value):
         return self._values_count[value]
