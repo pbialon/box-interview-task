@@ -67,7 +67,7 @@ class Tests(unittest.TestCase):
             TestRequest('SET a 40', None),
             TestRequest('COMMIT', None),
             TestRequest('GET a', '40'),
-            TestRequest('ROLLBACK', None),
+            TestRequest('ROLLBACK', 'NO TRANSACTION'),
         ]
 
         self._run_test(requests)
