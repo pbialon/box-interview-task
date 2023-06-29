@@ -1,11 +1,23 @@
 
-from collections import defaultdict
+from collections import defaultdict, deque
+
+class Transaction:
+    def __init__(self):
+        self._rollback_instructions = []
+
+    def add_rollback_instruction(self, instruction):
+        self._rollback_instructions.append(instruction)
+
+    def rollback(self):
+        for instruction in self._rollback_instructions:
+            instruction()
 
 
 class InMemoryDatabase:
     def __init__(self):
         self._db = {}
         self._values_count = defaultdict(int)
+        self._transactions = []
 
     def set(self, name, value):
         previous_value = self._db.get(name, None)
@@ -13,11 +25,22 @@ class InMemoryDatabase:
             self._values_count[previous_value] -= 1
         self._db[name] = value
         self._values_count[value] += 1
+        
+        if self._transactions:
+            current_transaction = self._transactions[-1]
+            if previous_value:
+                current_transaction.add_rollback_instruction(lambda: self.set(name, previous_value))
+            else:
+                current_transaction.add_rollback_instruction(lambda: self.delete(name))
     
     def get(self, name):
         return self._db.get(name, None)
     
     def delete(self, name):
+        if self._transactions:
+            current_transaction = self._transactions[-1]
+            current_transaction.add_rollback_instruction(lambda: self.set(name, self._db[name]))
+
         if name in self._db:
             value = self._db[name]
             del self._db[name]
@@ -27,13 +50,19 @@ class InMemoryDatabase:
         return self._values_count[value]
     
     def begin(self):
-        pass
+        self._transactions.append(Transaction())
 
     def rollback(self):
-        pass
+        if self._transactions:
+            self._transactions.pop().rollback()
+        else:
+            return 'NO TRANSACTION'
 
     def commit(self):
-        pass
+        if self._transactions:
+            self._transactions = []
+        else:
+            return 'NO TRANSACTION'
 
     def handle(self, request):
         COMMANDS = {
