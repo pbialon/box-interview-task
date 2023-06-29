@@ -25,6 +25,15 @@ class InMemoryDatabase:
 
     def count(self, value):
         return self._values_count[value]
+    
+    def begin(self):
+        pass
+
+    def rollback(self):
+        pass
+
+    def commit(self):
+        pass
 
     def handle(self, request):
         COMMANDS = {
@@ -32,12 +41,20 @@ class InMemoryDatabase:
             'GET': self.get,
             'DELETE': self.delete,
             'COUNT': self.count,
+            'BEGIN': self.begin,
+            'ROLLBACK': self.rollback,
+            'COMMIT': self.commit,
         }
         request = request.split()
         command = COMMANDS[request[0]]
+        if len(request) == 1:
+            return command()
+        
         name = request[1]
-        if len(request) == 3:
-            value = request[2]
-            return command(name, value)
-        return command(name)
+        if len(request) == 2:
+            return command(name)
+        
+        value = request[2]
+        return command(name, value)
+        
 
