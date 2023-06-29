@@ -53,16 +53,16 @@ class InMemoryDatabase:
         self._transactions.append(Transaction())
 
     def rollback(self):
-        if self._transactions:
-            self._transactions.pop().rollback()
-        else:
+        if not self._transactions:
             return 'NO TRANSACTION'
+        self._transactions.pop().rollback()
+
 
     def commit(self):
-        if self._transactions:
-            self._transactions = []
-        else:
+        if not self._transactions:
             return 'NO TRANSACTION'
+        self._transactions = []
+            
 
     def handle(self, request):
         COMMANDS = {
