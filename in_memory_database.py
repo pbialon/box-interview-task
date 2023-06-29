@@ -53,20 +53,21 @@ class InMemoryDatabase:
         return command(name, value)
 
 
-    def _set(self, name, value):
+    def _set(self, name, value, handle_rollback=True):
         previous_value = self._db.get(name, None)
         if previous_value:
             self._values_count[previous_value] -= 1
         self._db[name] = value
         self._values_count[value] += 1
 
-        rollback_instruction = lambda: self._set(name, previous_value) if previous_value else self._delete(name)
-        self._add_rollback_instruction_if_transaction(rollback_instruction)
+        if handle_rollback:
+            rollback_instruction = lambda: self._set(name, previous_value, handle_rollback=False) if previous_value else self._delete(name, handle_rollback=False)
+            self._add_rollback_instruction_if_transaction(rollback_instruction)
         
     def _get(self, name):
         return self._db.get(name, None)
     
-    def _delete(self, name):
+    def _delete(self, name, handle_rollback=True):
         if name not in self._db:
             return
         
@@ -74,7 +75,8 @@ class InMemoryDatabase:
         del self._db[name]
         self._values_count[value] -= 1
 
-        self._add_rollback_instruction_if_transaction(lambda: self._set(name, value))
+        if handle_rollback:
+            self._add_rollback_instruction_if_transaction(lambda: self._set(name, value, handle_rollback=False))
 
     def _count(self, value):
         return self._values_count[value]
