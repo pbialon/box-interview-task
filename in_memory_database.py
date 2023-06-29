@@ -87,3 +87,12 @@ class InMemoryDatabase:
         if self._transactions:
             self._transactions[-1].add_rollback_instruction(instruction)
         
+
+
+if __name__ == '__main__':
+    db = InMemoryDatabase()
+    while True:
+        request = input()
+        output = db.handle(request)
+        if output is not None:
+            print(output)
