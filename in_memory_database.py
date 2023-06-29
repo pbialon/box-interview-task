@@ -1,6 +1,15 @@
 
 from collections import defaultdict
 
+import signal
+import sys
+
+def sigint_handler(signal, frame):
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, sigint_handler)
+
+
 class Transaction:
     def __init__(self):
         self._rollback_instructions = []
