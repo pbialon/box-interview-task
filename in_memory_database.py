@@ -1,5 +1,5 @@
 
-from collections import defaultdict, deque
+from collections import defaultdict
 
 class Transaction:
     def __init__(self):
@@ -14,6 +14,8 @@ class Transaction:
 
 
 class InMemoryDatabase:
+    NO_TRANSACTION_ERROR = 'NO TRANSACTION'
+    
     def __init__(self):
         self._db = {}
         self._values_count = defaultdict(int)
@@ -48,14 +50,10 @@ class InMemoryDatabase:
             self._values_count[previous_value] -= 1
         self._db[name] = value
         self._values_count[value] += 1
+
+        rollback_instruction = lambda: self._set(name, previous_value) if previous_value else self._delete(name)
+        self._add_rollback_instruction_if_transaction(rollback_instruction)
         
-        if self._transactions:
-            current_transaction = self._transactions[-1]
-            if previous_value:
-                current_transaction.add_rollback_instruction(lambda: self._set(name, previous_value))
-            else:
-                current_transaction.add_rollback_instruction(lambda: self._delete(name))
-    
     def _get(self, name):
         return self._db.get(name, None)
     
@@ -67,10 +65,7 @@ class InMemoryDatabase:
         del self._db[name]
         self._values_count[value] -= 1
 
-        if self._transactions:
-            current_transaction = self._transactions[-1]
-            current_transaction.add_rollback_instruction(lambda: self._set(name, value))
-
+        self._add_rollback_instruction_if_transaction(lambda: self._set(name, value))
 
     def _count(self, value):
         return self._values_count[value]
@@ -80,11 +75,15 @@ class InMemoryDatabase:
 
     def _rollback(self):
         if not self._transactions:
-            return 'NO TRANSACTION'
+            return self.NO_TRANSACTION_ERROR
         self._transactions.pop().rollback()
 
     def _commit(self):
         if not self._transactions:
-            return 'NO TRANSACTION'
+            return self.NO_TRANSACTION_ERROR
         self._transactions = []
+
+    def _add_rollback_instruction_if_transaction(self, instruction):
+        if self._transactions:
+            self._transactions[-1].add_rollback_instruction(instruction)
         
